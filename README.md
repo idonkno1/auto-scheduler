@@ -50,10 +50,10 @@ Specifies the number of employees needed for each hour of the workweek. The form
     python model.py
     ```
 
-4. The script will output the optimal schedule for each worker, indicating which periods they should work.### Output
+4. The script will output the optimal schedule for each worker, indicating which periods they should work.
 
 According to the constraints, this program returns the turns for each worker during the week in an Excel file called niceSchedule.xlsl.
     
 It will take around a minute to solve, depending on the computer.
-Then, we will have, for every worker in worker_data, a dictionary called "schedule", where it tells which period corresponds to each worker.
+Then, we will have, for every worker in worker_data, a dictionary called "ignore", where it tells which period corresponds to each worker.
 
