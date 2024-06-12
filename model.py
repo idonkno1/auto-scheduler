@@ -168,9 +168,9 @@ if __name__ == "__main__":
     # Creating DataFrame from workers_data
     schedule_df = pandas.DataFrame([{**{'Worker': worker}, **{'Schedule': ', '.join(data['schedule'])}} for worker, data in workers_data.items()])
     # Writing to Excel file
-    schedule_df.to_excel("./schedule.xlsx", index=False)
+    schedule_df.to_excel("./ignore.xlsx", index=False)
 
-    schedule_df = pandas.read_excel("./schedule.xlsx")
+    schedule_df = pandas.read_excel("./ignore.xlsx")
     nice_schedule = create_nice_schedule(schedule_df)
 
     # Save to Excel
