@@ -1,4 +1,4 @@
-    # Employee Scheduling Program
+Employee Scheduling Program
 
 ## Overview
 
@@ -55,5 +55,8 @@ Specifies the number of employees needed for each hour of the workweek. The form
 According to the constraints, this program returns the turns for each worker during the week in an Excel file called niceSchedule.xlsl.
     
 It will take around a minute to solve, depending on the computer.
-Then, we will have, for every worker in worker_data, a dictionary called "ignore", where it tells which period corresponds to each worker.
+Then, we will have, for every worker in worker_data, a dictionary called "ignore," which tells which period corresponds to each worker.
+
+
+https://github.com/idonkno1/auto-scheduler
 
