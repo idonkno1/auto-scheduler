@@ -19,7 +19,7 @@ WORKING_HOURS = 45 # length of amount of workers needed
 def model_problem():
 
     workerdf = pandas.read_excel("workersAvailability.xlsx", header=0) 
-    quarters = pandas.read_excel("workingHours.xlsx", header=0).loc[0].tolist()
+    hoursdf = pandas.read_excel("workingHours.xlsx", header=0).loc[0].tolist()
     problem = pulp.LpProblem("ScheduleWorkers", pulp.LpMinimize)
     workers_data = {}
 
@@ -73,18 +73,31 @@ def model_problem():
                 problem += data['worked_hours'][period] == 0
 
     # ensures correct amount of staff no under/over staffing
-    objective_function = None
-    for worker in workers_data.keys():
-        objective_function += sum(workers_data[worker]["worked_hours"])
-    
+    objective_function = pulp.lpSum(workers_data[worker]["worked_hours"][period] for worker in workers_data.keys() for period in range(WORKING_HOURS))
     problem += objective_function
 
     # ensures workers meet demand each quarter, look in quater excel file for numbers
     for hour in range(WORKING_HOURS):
-        problem += (
-            pulp.lpSum(workers_data[worker]['worked_hours'][hour] for worker in workers_data) == quarters[hour],
-            f"Demand_Q{hour}"
-        )
+        if hoursdf[hour] == 0:
+            problem += (
+                pulp.lpSum(workers_data[worker]['worked_hours'][hour] for worker in workers_data) == 0,
+                f"NoDemand_Q{hour}"
+            )
+        if hoursdf[hour] == 2:
+            problem += (
+                pulp.lpSum(workers_data[worker]['worked_hours'][hour] for worker in workers_data) == 2,
+                f"ExactDemand_Q{hour}"
+            )
+
+        elif hoursdf[hour] > 2:
+            problem += (
+                pulp.lpSum(workers_data[worker]['worked_hours'][hour] for worker in workers_data) <= hoursdf[hour] + 1,
+                f"MaxDemand_Q{hour}"
+            )
+            problem += (
+                pulp.lpSum(workers_data[worker]['worked_hours'][hour] for worker in workers_data) >= hoursdf[hour] - 1,
+                f"MinDemand_Q{hour}"
+            )
 
     # minimum and maximum hours constraints for workers, look in workers excel for numbers
     for worker, data in workers_data.items():
