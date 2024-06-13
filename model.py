@@ -2,23 +2,24 @@ from operator import itemgetter
 import pandas
 import pulp
 
-from example_inputs import (
-    periods,
-)
+periods = [ 
+    "{} {}-{}".format(day, hour, hour+1) 
+    for day in ["Mon", "Tue", "Wed", "Thu", "Fri"] 
+    for hour in range(8, 17)
+]
 
-AM_QUARTERS = 45 # length of amount of workers needed 
+WORKING_HOURS = 45 # length of amount of workers needed 
 
 # workers_data = {
 #   worker1: {
-#       "period_avail": [0, 1, 1, 1, 0, 0,........, 1, 1, 0, 0]. Length 45,
+#       "hour_avail": [0, 1, 1, 1, 0, 0,........, 1, 1, 0, 0]. Length 45,
 #   }
 # }
 
-
 def model_problem():
 
-    workerdf = pandas.read_excel("workers.xlsx", header=0) 
-    quarters = pandas.read_excel("./quarter.xlsx", header=0).loc[0].tolist()
+    workerdf = pandas.read_excel("workersAvailability.xlsx", header=0) 
+    quarters = pandas.read_excel("workingHours.xlsx", header=0).loc[0].tolist()
     problem = pulp.LpProblem("ScheduleWorkers", pulp.LpMinimize)
     workers_data = {}
 
@@ -29,7 +30,7 @@ def model_problem():
         workers_data[name] = {
             "min_hours": min_hours,
             "max_hours": max_hours,
-            "period_avail": []
+            "hour_avail": []
         } 
         
         # checks worker excel file and gives 1 if available and 0 if not, check workers excel for availabilty
@@ -57,38 +58,38 @@ def model_problem():
                     period_end = period_start + 1
                     if period_start >= start_time and period_end <= end_time:
                         availability[period] = 1
-            workers_data[name]["period_avail"].extend(availability)
+            workers_data[name]["hour_avail"].extend(availability)
 
     for worker, data in workers_data.items():
-        data["worked_periods"] = [
+        data["worked_hours"] = [
             pulp.LpVariable(f"x_{worker}_{period}", cat=pulp.LpBinary)
-            for period in range(AM_QUARTERS)
+            for period in range(WORKING_HOURS)
         ]
     
     # respect worker unavailablity
     for worker, data in workers_data.items():
-        for period in range(AM_QUARTERS):
-            if data['period_avail'][period] == 0:
-                problem += data['worked_periods'][period] == 0
+        for period in range(WORKING_HOURS):
+            if data['hour_avail'][period] == 0:
+                problem += data['worked_hours'][period] == 0
 
     # ensures correct amount of staff no under/over staffing
     objective_function = None
     for worker in workers_data.keys():
-        objective_function += sum(workers_data[worker]["worked_periods"])
+        objective_function += sum(workers_data[worker]["worked_hours"])
     
     problem += objective_function
 
     # ensures workers meet demand each quarter, look in quater excel file for numbers
-    for quarter in range(AM_QUARTERS):
+    for hour in range(WORKING_HOURS):
         problem += (
-            pulp.lpSum(workers_data[worker]['worked_periods'][quarter] for worker in workers_data) == quarters[quarter],
-            f"Demand_Q{quarter}"
+            pulp.lpSum(workers_data[worker]['worked_hours'][hour] for worker in workers_data) == quarters[hour],
+            f"Demand_Q{hour}"
         )
 
     # minimum and maximum hours constraints for workers, look in workers excel for numbers
     for worker, data in workers_data.items():
-        problem += (pulp.lpSum(data["worked_periods"]) >= data["min_hours"], f"{worker}_min_hours")
-        problem += (pulp.lpSum(data["worked_periods"]) <= data["max_hours"], f"{worker}_max_hours")
+        problem += (pulp.lpSum(data["worked_hours"]) >= data["min_hours"], f"{worker}_min_hours")
+        problem += (pulp.lpSum(data["worked_hours"]) <= data["max_hours"], f"{worker}_max_hours")
 
     try:
         problem.solve()
@@ -97,8 +98,8 @@ def model_problem():
 
     for worker in workers_data.keys(): 
         workers_data[worker]["schedule"] = [] 
-        for element in range(len(workers_data[worker]["worked_periods"])):
-            if workers_data[worker]["worked_periods"][element].varValue == 1:
+        for element in range(len(workers_data[worker]["worked_hours"])):
+            if workers_data[worker]["worked_hours"][element].varValue == 1:
                 workers_data[worker]["schedule"].append(periods[element])
 
     return problem, workers_data
@@ -168,11 +169,11 @@ if __name__ == "__main__":
     # Creating DataFrame from workers_data
     schedule_df = pandas.DataFrame([{**{'Worker': worker}, **{'Schedule': ', '.join(data['schedule'])}} for worker, data in workers_data.items()])
     # Writing to Excel file
-    schedule_df.to_excel("./ignore.xlsx", index=False)
+    schedule_df.to_excel("./schedule.xlsx", index=False)
 
-    schedule_df = pandas.read_excel("./ignore.xlsx")
+    schedule_df = pandas.read_excel("./schedule.xlsx")
     nice_schedule = create_nice_schedule(schedule_df)
 
     # Save to Excel
-    output_path = "./niceSchedule.xlsx"
+    output_path = "./schedule.xlsx"
     nice_schedule.to_excel(output_path, index=False)
