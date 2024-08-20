@@ -104,11 +104,6 @@ def model_problem(workers_data, hoursdf):
                 f"MinDemand_Q{hour}"
             )
 
-    # Minimum and maximum hours constraints for workers
-    for worker, data in workers_data.items():
-        problem += (pulp.lpSum(data["worked_hours"]) >= data["min_hours"], f"{worker}_min_hours")
-        problem += (pulp.lpSum(data["worked_hours"]) <= data["max_hours"], f"{worker}_max_hours")
-
     try:
         problem.solve()
     except Exception as e:
